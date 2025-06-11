@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motivation au travail</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 15px;
+    }
+    p.intro {
+      text-align: center;
+      color: #555;
+      font-size: 16px;
+      margin-top: -10px;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      font-weight: 500;
+      color: #444;
+    }
+    input[type="number"], input[type="text"] {
+      width: 60px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+      text-align: center;
+    }
+    #prenom {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    #submitBtn {
+      margin-top: 30px;
+      display: block;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #submitBtn:hover {
+      background-color: #0056b3;
+    }
+    canvas {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Répartis 10 étoiles ✨</h1>
+    <p class="intro">
+      Quels sont les axes qui pèsent le plus dans le choix du travail que vous exercez aujourd'hui ?<br>
+      Répartissez 10 points exactement entre les différents axes ci-dessous :
+    </p>
+    <label for="prenom">Prénom :</label>
+    <input type="text" id="prenom" required>
+
+    <form id="formulaire">
+      <label>Intérêt / Plaisir <input type="number" min="0" max="10" value="0" name="plaisir"></label>
+      <label>Autonomie et liberté <input type="number" min="0" max="10" value="0" name="autonomie"></label>
+      <label>Collectif <input type="number" min="0" max="10" value="0" name="collectif"></label>
+      <label>Équilibre vie pro / perso <input type="number" min="0" max="10" value="0" name="equilibre"></label>
+      <label>Expertise / Création <input type="number" min="0" max="10" value="0" name="expertise"></label>
+      <label>Statut / Pouvoir / Reconnaissance <input type="number" min="0" max="10" value="0" name="statut"></label>
+      <label>Rémunération <input type="number" min="0" max="10" value="0" name="remuneration"></label>
+      <label>Contribution sociale / Alignement valeurs <input type="number" min="0" max="10" value="0" name="contribution"></label>
+
+      <button type="submit" id="submitBtn">Valider</button>
+    </form>
+
+    <canvas id="radarChart"></canvas>
+  </div>
+
+  <script>
+    const form = document.getElementById('formulaire');
+    const chartCanvas = document.getElementById('radarChart');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const prenom = document.getElementById('prenom').value.trim();
+      if (!prenom) return alert("Merci d'entrer votre prénom");
+
+      const formData = new FormData(form);
+      let total = 0;
+      const valeurs = [];
+
+      for (const [_, value] of formData.entries()) {
+        const num = parseInt(value);
+        valeurs.push(num);
+        total += num;
+      }
+
+      if (total !== 10) {
+        alert("Tu dois distribuer exactement 10 étoiles ✨ (tu as mis " + total + ")");
+        return;
+      }
+
+      fetch("https://script.google.com/macros/s/AKfycbzaW_b586dhV9egdik8Cl_LSFbbtFn8rOLV63m-IeWcyQZynqCmz7uZJqMD9pNG98pj_A/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prenom, valeurs })
+      })
+      .then(res => res.text())
+      .then(data => console.log("Enregistré dans Google Sheets :", data))
+      .catch(err => console.error("Erreur d'enregistrement :", err));
+
+      afficherRadar(valeurs);
+    });
+
+    function afficherRadar(valeurs) {
+      const labels = [
+        "Intérêt / Plaisir",
+        "Autonomie et liberté",
+        "Collectif",
+        "Équilibre",
+        "Expertise / Création",
+        "Statut / Pouvoir",
+        "Rémunération",
+        "Contribution"
+      ];
+
+      const data = {
+        labels,
+        datasets: [
+          {
+            label: 'Vos réponses',
+            data: valeurs,
+            fill: true,
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0,0,255,0.2)',
+            pointBackgroundColor: 'blue'
+          },
+          {
+            label: 'Moyenne des participants',
+            data: [1,1,1,1,1,1,2,2], // temporaire
+            fill: true,
+            borderColor: 'gray',
+            backgroundColor: 'rgba(128,128,128,0.2)',
+            pointBackgroundColor: 'gray'
+          }
+        ]
+      };
+
+      new Chart(chartCanvas, {
+        type: 'radar',
+        data,
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              min: 0,
+              max: 10,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
